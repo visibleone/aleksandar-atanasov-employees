@@ -1,0 +1,53 @@
+openapi: 3.0.0
+info:
+  title: Employees API
+  description: A simple API to manage employees
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+paths:
+  /employees/common-projects:
+    post:
+      operationId: uploadEmployeesProjects
+      summary: Accept CSV file with projects and employees for processing. Once processed return a list with employee pairs working on same projects.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing employee and project data
+
+      responses:
+        '202':
+          description: File accepted for processing
+        '400':
+          description: File validation failed
+        '413':
+          description: File too large
+        '500':
+          description: Internal server error
+
+#components:
+#  schemas:
+#    User:
+#      type: object
+#      properties:
+#        id:
+#          type: integer
+#          example: 1
+#        name:
+#          type: string
+#          example: Alice
+#        email:
+#          type: string
+#          example: alice@example.com
