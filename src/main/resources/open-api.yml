@@ -26,7 +26,6 @@ paths:
                   type: string
                   format: binary
                   description: CSV file containing employee and project data
-
       responses:
         '202':
           description: File accepted for processing
@@ -37,17 +36,42 @@ paths:
         '500':
           description: Internal server error
 
-#components:
-#  schemas:
-#    User:
-#      type: object
-#      properties:
-#        id:
-#          type: integer
-#          example: 1
-#        name:
-#          type: string
-#          example: Alice
-#        email:
-#          type: string
-#          example: alice@example.com
+  /employees/common-projects/result/{identification-process-id}:
+    get:
+      operationId: getCommonProjects
+      summary: Fetch common projects by pair of employees
+      parameters:
+        - name: identification-process-id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            description: Unique identifier of the upload operation
+      responses:
+        '200':
+          description: Common projects identification process found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonProject'
+        '404':
+          description: Common projects identification process not found
+
+components:
+  schemas:
+    CommonProject:
+      type: object
+      properties:
+        firstEmployeeId:
+          type: integer
+          example: 143
+        secondEmployeeId:
+          type: integer
+          example: 218
+        projectId:
+          type: integer
+          example: 12
+        daysWorked:
+          type: integer
+          example: 60
