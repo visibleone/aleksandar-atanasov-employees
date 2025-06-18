@@ -3,6 +3,7 @@ package org.example.employees.model;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvDate;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import lombok.Data;
 
 @Data
@@ -17,10 +18,10 @@ public class EmployeeProjectCsvRecord {
 
   @NotNull
   @CsvBindByName(column = "DateFrom", required = true)
-  @CsvDate
-  private String dateFrom;
+  @CsvDate("yyyy-MM-dd")
+  private LocalDate dateFrom;
 
   @CsvBindByName(column = "DateTo")
-  @CsvDate
-  private String dateTo;
+  @CsvDate("yyyy-MM-dd")
+  private LocalDate dateTo;
 }

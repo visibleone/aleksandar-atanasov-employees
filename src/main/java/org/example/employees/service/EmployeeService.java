@@ -1,9 +1,10 @@
 package org.example.employees.service;
 
+import java.io.File;
 import java.util.UUID;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface EmployeeService {
-  // TODO: Specify thrown exceptions
-  UUID startIdentifyingEmployeesProjects(MultipartFile file);
+  UUID initializeIdentificationProcess(File file);
+
+  void startIdentifyingEmployeesProjectsAsync(UUID processId, File file);
 }

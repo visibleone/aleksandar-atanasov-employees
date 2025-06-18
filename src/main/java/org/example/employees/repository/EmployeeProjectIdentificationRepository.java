@@ -11,19 +11,17 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EmployeeProjectIdentificationRepository
     extends JpaRepository<EmployeeProjectIdentificationEntity, UUID> {
+
+  // TODO: Do not use native query
   @Modifying
   @Query(
-      "UPDATE EmployeeProjectIdentificationEntity e SET e.result = CONCAT(COALESCE(e.result, ''), :result) WHERE e.id = :processId")
-  void appendResult(@Param("processId") UUID processId, @Param("result") String result);
-
-  //  // TODO: Do not use native query
-  //  @Modifying
-  //  @Transactional
-  //  @Query(value = """
-  //    UPDATE employee_project_identification
-  //    SET result = COALESCE(result, '[]'::jsonb) || CAST(:newRecords AS jsonb)
-  //    WHERE id = :id
-  //    """, nativeQuery = true)
-  //  int appendResults(@Param("processId") UUID processId, @Param("newRecords") String
-  // newRecordsJson);
+      value =
+          "UPDATE employee_project_identification "
+              + "SET result = CASE "
+              + "    WHEN result IS NULL THEN CAST(:results AS jsonb) "
+              + "    ELSE result || CAST(:results AS jsonb) "
+              + "END "
+              + "WHERE id = :processId",
+      nativeQuery = true)
+  void appendResults(@Param("processId") UUID processId, @Param("results") String results);
 }

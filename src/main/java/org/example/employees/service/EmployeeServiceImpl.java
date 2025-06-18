@@ -1,9 +1,11 @@
 package org.example.employees.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.io.File;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.employees.model.EmployeeProjectCsvRecord;
@@ -13,7 +15,7 @@ import org.example.employees.repository.EmployeeProjectIdentificationRepository;
 import org.openapitools.model.CommonProject;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,17 +25,17 @@ public class EmployeeServiceImpl implements EmployeeService {
   private final EmployeeProjectIdentificationRepository employeeRepository;
   private final ObjectMapper objectMapper;
 
-  public UUID startIdentifyingEmployeesProjects(MultipartFile file) {
+  @Override
+  public UUID initializeIdentificationProcess(File file) {
     EmployeeProjectIdentificationEntity entity =
         employeeRepository.save(initializeIdentification(file));
-    identifyEmployeesProjectsAsync(entity.getId(), file);
 
     return entity.getId();
   }
 
-  // TODO: Specify thrown exceptions
   @Async
-  protected void identifyEmployeesProjectsAsync(UUID processId, MultipartFile file) {
+  @Transactional
+  public void startIdentifyingEmployeesProjectsAsync(UUID processId, File file) {
     try {
       csvParserService.parseEmployeeProjectsCsv(
           file,
@@ -41,7 +43,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             List<CommonProject> commonProjects = findCommonProjects(chunk);
             try {
               String jsonResult = objectMapper.writeValueAsString(commonProjects);
-              employeeRepository.appendResult(processId, jsonResult);
+              employeeRepository.appendResults(processId, jsonResult);
             } catch (Exception e) {
               log.error("Error serializing common projects", e);
               throw new RuntimeException("Failed to serialize common projects", e);
@@ -54,13 +56,89 @@ public class EmployeeServiceImpl implements EmployeeService {
   }
 
   private List<CommonProject> findCommonProjects(List<EmployeeProjectCsvRecord> chunk) {
-    // TODO: Implement logic to find common projects
-    return new ArrayList<>();
+    Map<Integer, List<EmployeeProjectCsvRecord>> employeeProjects = groupProjectsByEmployee(chunk);
+    List<CommonProject> result = new ArrayList<>();
+
+    List<Integer> employeeIds = new ArrayList<>(employeeProjects.keySet());
+    for (int i = 0; i < employeeIds.size(); i++) {
+      for (int j = i + 1; j < employeeIds.size(); j++) {
+        findAndAddCommonProjects(employeeIds.get(i), employeeIds.get(j), employeeProjects, result);
+      }
+    }
+    return result;
   }
 
-  private EmployeeProjectIdentificationEntity initializeIdentification(MultipartFile file) {
+  private Map<Integer, List<EmployeeProjectCsvRecord>> groupProjectsByEmployee(
+      List<EmployeeProjectCsvRecord> chunk) {
+    return chunk.stream().collect(Collectors.groupingBy(EmployeeProjectCsvRecord::getEmployeeId));
+  }
+
+  private void findAndAddCommonProjects(
+      int firstEmployeeId,
+      int secondEmployeeId,
+      Map<Integer, List<EmployeeProjectCsvRecord>> employeeProjects,
+      List<CommonProject> result) {
+    List<EmployeeProjectCsvRecord> firstEmployeeAssignments = employeeProjects.get(firstEmployeeId);
+    List<EmployeeProjectCsvRecord> secondEmployeeAssignments =
+        employeeProjects.get(secondEmployeeId);
+
+    getCommonProjectsWithDuration(firstEmployeeAssignments, secondEmployeeAssignments)
+        .forEach(
+            (projectId, daysWorked) ->
+                result.add(
+                    new CommonProject()
+                        .firstEmployeeId(firstEmployeeId)
+                        .secondEmployeeId(secondEmployeeId)
+                        .projectId(projectId)
+                        .daysWorked(daysWorked.intValue())));
+  }
+
+  private Map<Integer, Long> getCommonProjectsWithDuration(
+      List<EmployeeProjectCsvRecord> firstEmployeeAssignments,
+      List<EmployeeProjectCsvRecord> secondEmployeeAssignments) {
+    return firstEmployeeAssignments.stream()
+        .filter(first -> hasMatchingProject(first, secondEmployeeAssignments))
+        .map(
+            first ->
+                calculateProjectOverlap(
+                    first, findMatchingRecord(first, secondEmployeeAssignments)))
+        .filter(Objects::nonNull)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private boolean hasMatchingProject(
+      EmployeeProjectCsvRecord record, List<EmployeeProjectCsvRecord> assignments) {
+    return assignments.stream()
+        .anyMatch(assignment -> assignment.getProjectId().equals(record.getProjectId()));
+  }
+
+  private EmployeeProjectCsvRecord findMatchingRecord(
+      EmployeeProjectCsvRecord record, List<EmployeeProjectCsvRecord> assignments) {
+    return assignments.stream()
+        .filter(assignment -> assignment.getProjectId().equals(record.getProjectId()))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private AbstractMap.SimpleEntry<Integer, Long> calculateProjectOverlap(
+      EmployeeProjectCsvRecord first, EmployeeProjectCsvRecord second) {
+    LocalDate firstFrom = first.getDateFrom();
+    LocalDate firstTo = first.getDateTo() == null ? LocalDate.now() : first.getDateTo();
+    LocalDate secondFrom = second.getDateFrom();
+    LocalDate secondTo = second.getDateTo() == null ? LocalDate.now() : second.getDateTo();
+
+    if (firstFrom.isBefore(secondTo) && secondFrom.isBefore(firstTo)) {
+      LocalDate overlapStart = firstFrom.isAfter(secondFrom) ? firstFrom : secondFrom;
+      LocalDate overlapEnd = firstTo.isBefore(secondTo) ? firstTo : secondTo;
+      return new AbstractMap.SimpleEntry<>(
+          first.getProjectId(), ChronoUnit.DAYS.between(overlapStart, overlapEnd));
+    }
+    return null;
+  }
+
+  private EmployeeProjectIdentificationEntity initializeIdentification(File file) {
     return EmployeeProjectIdentificationEntity.builder()
-        .filename(file.getOriginalFilename())
+        .filename(file.getName())
         .uploadTime(java.time.Instant.now())
         .status(ProcessingStatus.PROCESSING)
         .build();

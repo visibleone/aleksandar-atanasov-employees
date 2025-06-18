@@ -3,7 +3,8 @@ package org.example.employees.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,6 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.example.employees.model.EmployeeProjectCsvRecord;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -20,9 +20,8 @@ public class CsvParserServiceImpl implements CsvParserService {
 
   @Override
   public void parseEmployeeProjectsCsv(
-      MultipartFile file, Consumer<List<EmployeeProjectCsvRecord>> chunkConsumer) {
-    try (BufferedReader reader =
-        new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+      File file, Consumer<List<EmployeeProjectCsvRecord>> chunkConsumer) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
 
       CsvToBean<EmployeeProjectCsvRecord> csvToBean =
           new CsvToBeanBuilder<EmployeeProjectCsvRecord>(reader)
