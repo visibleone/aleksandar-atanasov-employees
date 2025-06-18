@@ -2,18 +2,18 @@ package org.example.employees.model.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
-import lombok.Getter;
-import lombok.Setter;
-import org.example.employees.model.EmployeeProjectRecord;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Getter
 @Setter
-public class EmployeeProjectIdentification {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EmployeeProjectIdentificationEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,7 +31,7 @@ public class EmployeeProjectIdentification {
 
   @Column(name = "result", columnDefinition = "jsonb")
   @JdbcTypeCode(SqlTypes.JSON)
-  private List<EmployeeProjectRecord> result;
+  private String result;
 
   @Column(name = "error_message")
   private String errorMessage;

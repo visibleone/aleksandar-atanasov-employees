@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.example.employees.model.EmployeeProjectRecord;
+import org.example.employees.model.EmployeeProjectCsvRecord;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,23 +20,24 @@ public class CsvParserServiceImpl implements CsvParserService {
 
   @Override
   public void parseEmployeeProjectsCsv(
-      MultipartFile file, Consumer<List<EmployeeProjectRecord>> chunkConsumer) {
+      MultipartFile file, Consumer<List<EmployeeProjectCsvRecord>> chunkConsumer) {
     try (BufferedReader reader =
         new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-      CsvToBean<EmployeeProjectRecord> csvToBean =
-          new CsvToBeanBuilder<EmployeeProjectRecord>(reader)
-              .withType(EmployeeProjectRecord.class)
+      CsvToBean<EmployeeProjectCsvRecord> csvToBean =
+          new CsvToBeanBuilder<EmployeeProjectCsvRecord>(reader)
+              .withType(EmployeeProjectCsvRecord.class)
               .withIgnoreLeadingWhiteSpace(true)
               .withIgnoreEmptyLine(true)
+              .withThrowExceptions(true)
               .build();
 
-      List<EmployeeProjectRecord> chunk = new ArrayList<>(CHUNK_SIZE_IN_RECORDS);
-      for (EmployeeProjectRecord record : csvToBean) {
+      List<EmployeeProjectCsvRecord> chunk = new ArrayList<>(CHUNK_SIZE_IN_RECORDS);
+      for (EmployeeProjectCsvRecord record : csvToBean) {
         chunk.add(record);
 
         if (chunk.size() >= CHUNK_SIZE_IN_RECORDS) {
-          processChunk(chunk);
+          // processChunk(chunk);
           chunkConsumer.accept(chunk);
           chunk.clear();
         }
@@ -44,7 +45,7 @@ public class CsvParserServiceImpl implements CsvParserService {
 
       // Process remaining records
       if (!chunk.isEmpty()) {
-        processChunk(chunk);
+        // processChunk(chunk);
         chunkConsumer.accept(chunk);
       }
 
@@ -54,8 +55,8 @@ public class CsvParserServiceImpl implements CsvParserService {
     }
   }
 
-  private void processChunk(List<EmployeeProjectRecord> chunk) {
-    log.debug("Processing chunk of {} records", chunk.size());
-    // TODO: Do processing here
-  }
+  //  private void processChunk(List<EmployeeProjectCsvRecord> chunk) {
+  //    log.debug("Processing chunk of {} records", chunk.size());
+  //    // TODO: Do processing here
+  //  }
 }
