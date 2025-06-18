@@ -54,9 +54,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommonProject'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommonProject'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Invalid request parameters"
         '404':
-          description: Common projects identification process not found
+          description: Identification process not found
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Identification process not found"
 
 components:
   schemas:
