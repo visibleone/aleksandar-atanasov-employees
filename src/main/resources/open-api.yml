@@ -54,9 +54,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CommonProject'
+                $ref: '#/components/schemas/CommonProjectsResponse'
         '400':
           description: Bad request
           content:
@@ -74,6 +72,18 @@ paths:
 
 components:
   schemas:
+    CommonProjectsResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: SUCCESS
+        errorMessage:
+          type: string
+        commonProjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommonProject'
     CommonProject:
       type: object
       properties:

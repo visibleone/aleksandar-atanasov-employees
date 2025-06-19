@@ -14,6 +14,7 @@ import org.example.employees.model.entity.EmployeeProjectIdentificationEntity;
 import org.example.employees.model.entity.ProcessingStatus;
 import org.example.employees.repository.EmployeeProjectIdentificationRepository;
 import org.openapitools.model.CommonProject;
+import org.openapitools.model.CommonProjectsResponse;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,50 @@ public class EmployeeServiceImpl implements EmployeeService {
       processFailed(processId, e);
 
       log.error("Error processing CSV file", e);
+    }
+  }
+
+  @Override
+  public CommonProjectsResponse getCommonProjects(UUID identificationProcessId) {
+    Optional<EmployeeProjectIdentificationEntity> uploadProcess =
+        employeeRepository.findById(identificationProcessId);
+    if (!uploadProcess.isPresent()) {
+      return null;
+    }
+    EmployeeProjectIdentificationEntity entity = uploadProcess.get();
+    if (entity.getStatus() == ProcessingStatus.FAILED) {
+      CommonProjectsResponse commonProjectsResponse = new CommonProjectsResponse();
+      commonProjectsResponse.setStatus("FAILED");
+      commonProjectsResponse.setErrorMessage(entity.getErrorMessage());
+
+      return commonProjectsResponse;
+    } else if (entity.getStatus() == ProcessingStatus.PROCESSING) {
+      CommonProjectsResponse commonProjectsResponse = new CommonProjectsResponse();
+      commonProjectsResponse.setStatus("PROCESSING");
+
+      return commonProjectsResponse;
+    } else if (entity.getStatus() == ProcessingStatus.SUCCESS) {
+      CommonProjectsResponse commonProjectsResponse = new CommonProjectsResponse();
+      commonProjectsResponse.setStatus("SUCCESS");
+
+      try {
+        String jsonResult = entity.getResult();
+        if (jsonResult != null) {
+          commonProjectsResponse.setCommonProjects(
+              objectMapper.readValue(
+                  jsonResult,
+                  objectMapper
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, CommonProject.class)));
+        }
+      } catch (Exception e) {
+        log.error("Error deserializing common projects", e);
+        throw new RuntimeException("Failed to deserialize common projects", e);
+      }
+
+      return commonProjectsResponse;
+    } else {
+      return null;
     }
   }
 

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.employees.service.EmployeeService;
 import org.openapitools.api.EmployeesApi;
+import org.openapitools.model.CommonProjectsResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +33,21 @@ public class EmployeeController implements EmployeesApi {
       employeeService.startIdentifyingEmployeesProjectsAsync(processId, tempFile);
 
       return ResponseEntity.accepted().header(PROCESS_ID_HEADER, processId.toString()).build();
+    } catch (RuntimeException e) {
+      log.error("Error processing upload request", e);
+      return ResponseEntity.badRequest().build();
+    }
+  }
+
+  @Override
+  public ResponseEntity<CommonProjectsResponse> getCommonProjects(UUID identificationProcessId) {
+    try {
+      CommonProjectsResponse commonProjectsResponse =
+          employeeService.getCommonProjects(identificationProcessId);
+      if (commonProjectsResponse == null) {
+        return ResponseEntity.notFound().build();
+      }
+      return ResponseEntity.ok().body(commonProjectsResponse);
     } catch (RuntimeException e) {
       log.error("Error processing upload request", e);
       return ResponseEntity.badRequest().build();
