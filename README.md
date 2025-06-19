@@ -11,3 +11,4 @@ Pending improvements:
 * Don't use native SQL query in the JPA repository
 * Brand DB credentials from environment variables
 * Introduce DB schema versioning (Flyway)
+* Frontend is really basic and with hardcoded paths
