@@ -21,13 +21,21 @@ public class EmployeeController implements EmployeesApi {
   private final EmployeeService employeeService;
 
   @Override
-  // TODO: Validate file
   public ResponseEntity<Void> uploadEmployeesProjects(MultipartFile file) {
-    File tempFile = createTempFile(file);
-    UUID processId = employeeService.initializeIdentificationProcess(tempFile);
-    employeeService.startIdentifyingEmployeesProjectsAsync(processId, tempFile);
+    try {
+      if (file.isEmpty()) {
+        return ResponseEntity.badRequest().build();
+      }
 
-    return ResponseEntity.accepted().header(PROCESS_ID_HEADER, processId.toString()).build();
+      File tempFile = createTempFile(file);
+      UUID processId = employeeService.initializeIdentificationProcess(tempFile);
+      employeeService.startIdentifyingEmployeesProjectsAsync(processId, tempFile);
+
+      return ResponseEntity.accepted().header(PROCESS_ID_HEADER, processId.toString()).build();
+    } catch (RuntimeException e) {
+      log.error("Error processing upload request", e);
+      return ResponseEntity.badRequest().build();
+    }
   }
 
   private File createTempFile(MultipartFile file) {

@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.example.employees.model.EmployeeProjectCsvRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class CsvParserServiceImpl implements CsvParserService {
-  private static final int CHUNK_SIZE_IN_RECORDS = 1000;
+  @Value("${employees.csv.chunk-size-in-records}")
+  private int chunkSizeInRecords;
 
   @Override
   public void parseEmployeeProjectsCsv(
@@ -31,12 +33,11 @@ public class CsvParserServiceImpl implements CsvParserService {
               .withThrowExceptions(true)
               .build();
 
-      List<EmployeeProjectCsvRecord> chunk = new ArrayList<>(CHUNK_SIZE_IN_RECORDS);
+      List<EmployeeProjectCsvRecord> chunk = new ArrayList<>(chunkSizeInRecords);
       for (EmployeeProjectCsvRecord record : csvToBean) {
         chunk.add(record);
 
-        if (chunk.size() >= CHUNK_SIZE_IN_RECORDS) {
-          // processChunk(chunk);
+        if (chunk.size() >= chunkSizeInRecords) {
           chunkConsumer.accept(chunk);
           chunk.clear();
         }
@@ -44,7 +45,6 @@ public class CsvParserServiceImpl implements CsvParserService {
 
       // Process remaining records
       if (!chunk.isEmpty()) {
-        // processChunk(chunk);
         chunkConsumer.accept(chunk);
       }
 
@@ -53,9 +53,4 @@ public class CsvParserServiceImpl implements CsvParserService {
       throw new RuntimeException("Failed to parse CSV file: " + e.getMessage(), e);
     }
   }
-
-  //  private void processChunk(List<EmployeeProjectCsvRecord> chunk) {
-  //    log.debug("Processing chunk of {} records", chunk.size());
-  //    // TODO: Do processing here
-  //  }
 }

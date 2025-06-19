@@ -2,6 +2,7 @@ package org.example.employees.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -46,13 +47,41 @@ public class EmployeeServiceImpl implements EmployeeService {
               employeeRepository.appendResults(processId, jsonResult);
             } catch (Exception e) {
               log.error("Error serializing common projects", e);
-              throw new RuntimeException("Failed to serialize common projects", e);
+              processFailed(processId, e);
             }
           });
+
+      processCompletedSuccessfully(processId);
     } catch (Exception e) {
+      processFailed(processId, e);
+
       log.error("Error processing CSV file", e);
-      throw new RuntimeException("Failed to process CSV file", e);
     }
+  }
+
+  private void processFailed(UUID processId, Exception e) {
+    employeeRepository
+        .findById(processId)
+        .ifPresent(
+            entity -> {
+              entity.setStatus(ProcessingStatus.FAILED);
+              entity.setErrorMessage(e.getMessage());
+              entity.setProcessedAt(Instant.now());
+              employeeRepository.save(entity);
+              log.error("Processing failed for processId: {}", processId);
+            });
+  }
+
+  private void processCompletedSuccessfully(UUID processId) {
+    employeeRepository
+        .findById(processId)
+        .ifPresent(
+            entity -> {
+              entity.setStatus(ProcessingStatus.SUCCESS);
+              entity.setProcessedAt(Instant.now());
+              employeeRepository.save(entity);
+              log.info("Processing completed for processId: {}", processId);
+            });
   }
 
   private List<CommonProject> findCommonProjects(List<EmployeeProjectCsvRecord> chunk) {

@@ -12,7 +12,7 @@ paths:
   /employees/common-projects:
     post:
       operationId: uploadEmployeesProjects
-      summary: Accept CSV file with projects and employees for processing. Once processed return a list with employee pairs working on same projects.
+      summary: Accept CSV file with projects and employees for asynchronous processing. Returns the process id in header "X-Identification-Process-ID". It can be used to poll for the result on another endpoint.
       requestBody:
         required: true
         content:
