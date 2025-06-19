@@ -39,7 +39,7 @@ paths:
   /employees/common-projects/result/{identification-process-id}:
     get:
       operationId: getCommonProjects
-      summary: Fetch common projects by pair of employees
+      summary: Fetch the result of CSV processing by identification process ID
       parameters:
         - name: identification-process-id
           in: path
